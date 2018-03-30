@@ -7,7 +7,6 @@ import logging
 import zope.interface
 
 import boto3
-import botocore
 
 from certbot import interfaces
 from certbot.plugins import common
@@ -16,9 +15,9 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 
+@zope.interface.implementer(interfaces.IInstaller)
+@zope.interface.provider(interfaces.IPluginFactory)
 class Installer(common.Plugin):
-    zope.interface.implements(interfaces.IInstaller)
-    zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "ACM installer"
 
@@ -30,3 +29,16 @@ class Installer(common.Plugin):
         Upload Certificate to ACM
         """
         client = boto3.client('acm')
+        api_client = boto3.client('apigateway')
+
+        body = open(cert_path).read()
+        key = open(key_path).read()
+        chain = open(chain_path).read()
+
+        domain_response = api_client.get_domain_name(domainName=domain)
+        response = client.import_certificate(
+            CertificateArn=domain_response['certificateArn'],
+            Certificate=body,
+            PrivateKey=key,
+            CertificateChain=chain
+        )
