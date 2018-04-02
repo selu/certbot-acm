@@ -24,7 +24,8 @@ class Installer(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
 
-    def deploy_cert(self, domain, cert_path, key_path, chain_path, fullchain_path):
+    def deploy_cert(self, domain,
+                    cert_path, key_path, chain_path, fullchain_path):
         """
         Upload Certificate to ACM
         """
@@ -36,7 +37,7 @@ class Installer(common.Plugin):
         chain = open(chain_path).read()
 
         domain_response = api_client.get_domain_name(domainName=domain)
-        response = client.import_certificate(
+        client.import_certificate(
             CertificateArn=domain_response['certificateArn'],
             Certificate=body,
             PrivateKey=key,
