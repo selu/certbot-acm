@@ -24,6 +24,39 @@ class Installer(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
 
+    def get_all_names(self):
+        pass
+
+    def view_config_changes(self):
+        pass
+
+    def prepare(self):
+        pass
+
+    def supported_enhancements(self):
+        return []
+
+    def config_test(self):
+        pass
+
+    def recovery_routine(self):
+        pass
+
+    def enhance(self, domain, enhancement, options=None):
+        pass
+
+    def save(self, title=None, temporary=False):
+        pass
+
+    def rollback_checkpoints(self, rollback=1):
+        pass
+
+    def restart(self):
+        pass
+
+    def more_info(self):
+        return ""
+
     def deploy_cert(self, domain,
                     cert_path, key_path, chain_path, fullchain_path):
         """
@@ -32,22 +65,17 @@ class Installer(common.Plugin):
         acm_client = boto3.client('acm')
         api_client = boto3.client('apigateway')
 
-        body = open(cert_path).read()
-        key = open(key_path).read()
-        chain = open(chain_path).read()
+        certificate = {
+            'Certificate': open(cert_path).read(),
+            'PrivateKey': open(key_path).read(),
+            'CertificateChain': open(chain_path).read()
+        }
 
         try:
             domain_response = api_client.get_domain_name(domainName=domain)
+            certificate['CertificateArn'] = domain_response['certificateArn']
         except api_client.exceptions.NotFoundException:
             logger.info('API Domain not found: %s' % domain)
-            domain_response = None
 
-        response = acm_client.import_certificate(
-            CertificateName="%s cert" % domain,
-            CertificateArn=domain_response['certificateArn']
-                            if domain_response else None,
-            Certificate=body,
-            PrivateKey=key,
-            CertificateChain=chain
-        )
+        response = acm_client.import_certificate(**certificate)
         logger.info('Certificate %s is imported.' % response['CertificateArn'])
