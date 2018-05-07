@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 
+import os
 import logging
 
 import zope.interface
@@ -52,7 +53,28 @@ class Installer(common.Plugin):
         pass
 
     def restart(self):
-        pass
+        for domain in self.config.domains:
+            logger.info("Renew domain: "+domain)
+            cert_path = os.path.join(
+                self.config.live_dir, domain, 'cert.pem'
+            )
+            chain_path = os.path.join(
+                self.config.live_dir, domain, 'chain.pem'
+            )
+            fullchain_path = os.path.join(
+                self.config.live_dir, domain, 'fullchain.pem'
+            )
+            key_path = os.path.join(
+                self.config.live_dir, domain, 'privkey.pem'
+            )
+            try:
+                open(cert_path, 'r')
+            except IOError as e:
+                logger.error(e)
+                continue
+            self.deploy_cert(
+                domain, cert_path, key_path, chain_path, fullchain_path
+            )
 
     def more_info(self):
         return ""

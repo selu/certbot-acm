@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='certbot-acm',
-    version='0.0.1',
+    version='0.0.2',
     description='ACM installer plugin for Certbot client',
     url='https://github.com/selu/certbot-acm',
     author='Szabolcs Seláf',
