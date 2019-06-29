@@ -85,7 +85,6 @@ class Installer(common.Plugin):
         Upload Certificate to ACM
         """
         acm_client = boto3.client('acm')
-        api_client = boto3.client('apigateway')
 
         certificate = {
             'Certificate': open(cert_path).read(),
@@ -94,8 +93,19 @@ class Installer(common.Plugin):
         }
 
         try:
-            domain_response = api_client.get_domain_name(domainName=domain)
-            certificate['CertificateArn'] = domain_response['certificateArn']
+            response = acm_client.list_certificates()
+            logger.debug(response)
+
+            cert_list = response['CertificateSummaryList']
+
+            if not cert_list:
+                logger.debug("No certs found!")
+                pass
+            else:
+                for cert in cert_list:
+                    if (cert['DomainName'] == domain):
+                        certificate['CertificateArn'] = cert['CertificateArn']
+
         except api_client.exceptions.NotFoundException:
             logger.info('API Domain not found: %s' % domain)
 
