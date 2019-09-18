@@ -24,6 +24,7 @@ class Installer(common.Plugin):
 
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
+        self.domains_uploaded = []
 
     def get_all_names(self):
         pass
@@ -53,29 +54,7 @@ class Installer(common.Plugin):
         pass
 
     def restart(self):
-        for domain in self.config.domains:
-            logger.info("Renew domain: "+domain)
-            cert_path = os.path.join(
-                self.config.live_dir, domain, 'cert.pem'
-            )
-            chain_path = os.path.join(
-                self.config.live_dir, domain, 'chain.pem'
-            )
-            fullchain_path = os.path.join(
-                self.config.live_dir, domain, 'fullchain.pem'
-            )
-            key_path = os.path.join(
-                self.config.live_dir, domain, 'privkey.pem'
-            )
-            try:
-                open(cert_path, 'r')
-            except IOError as e:
-                logger.error(e)
-                continue
-            self.deploy_cert(
-                domain, cert_path, key_path, chain_path, fullchain_path
-            )
-
+        pass
     def more_info(self):
         return ""
 
@@ -100,14 +79,23 @@ class Installer(common.Plugin):
 
             if not cert_list:
                 logger.debug("No certs found!")
-                pass
             else:
                 for cert in cert_list:
                     if (cert['DomainName'] == domain):
-                        certificate['CertificateArn'] = cert['CertificateArn']
+                        if domain not in self.domains_uploaded:
+                            certificate['CertificateArn'] = cert['CertificateArn']
+                            logger.debug("Uploading existing certificate...")
+                            response = acm_client.import_certificate(**certificate)
+                            logger.info('Certificate %s is imported.' % response['CertificateArn'])
+                            self.domains_uploaded.append(domain)
+                        else:
+                            logger.info("Certificate for this domain recently uploaded. Not uploading again.")
+            if not self.domains_uploaded:
+                logger.info("Certificate doesn't exist in ACM. Uploading")
+                response = acm_client.import_certificate(**certificate)
+                logger.info('Certificate %s is imported.' % response['CertificateArn'])
+                self.domains_uploaded.append(domain)
 
         except api_client.exceptions.NotFoundException:
             logger.info('API Domain not found: %s' % domain)
 
-        response = acm_client.import_certificate(**certificate)
-        logger.info('Certificate %s is imported.' % response['CertificateArn'])
